@@ -1,0 +1,9 @@
+# ldap2pg
+ldap
+psycopg2-binary>=2.9.1
+setuptools
+yaml
+
+# schema script
+ldap3>=2.9
+#psycopg2-binary>=2.9.1

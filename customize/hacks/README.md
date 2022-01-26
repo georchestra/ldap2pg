@@ -1,0 +1,1 @@
+For geOrchestra usage, we need some regex parsing on the LDAP roles. This requires to hack ldap2pg's original format.py (this is too specific to be accepted in the upstream project). So, replace the original ldap2pg's format.py file by this one (the only changes are at lines 324-337 )
