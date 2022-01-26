@@ -81,8 +81,11 @@ This was first designed to work with Docker. But since ldap2pg doesn't care abou
 
 #### Without docker
 
+You can install ldap2pg. Look at the [official documentation](https://ldap2pg.readthedocs.io/en/latest/install/). Then you will have to apply the following hack, and you will be able to use the configuration provided in this repo.
+
 ##### Hack
-There is a small hack to apply on the ldap2pg upstream code: for geOrchestra usage, we need some regex parsing on the LDAP roles. This requires to hack ldap2pg's original format.py (this is too specific to be accepted in the upstream project). So, replace the original ldap2pg's format.py file by the one from customize/hacks/format.py (the only changes are at lines 324-337 )
+There is a small hack to apply on the ldap2pg upstream code: for geOrchestra usage, we need some regex parsing on the LDAP roles. This requires to hack ldap2pg's original format.py (this is too specific to be accepted in the upstream project). So, replace the original ldap2pg's format.py file by the one from customize/hacks/format.py (the only changes are at lines 324-337).
+For instance, if you have installed ldap2pg using pip, you will have to replace the format.py file at /usr/local/lib/python3.9/dist-packages/ldap2pg/format.py (Debian 11 example, you might have to adjust according to your environment).
 
 ##### Config
 You can use the config file from customize/config/ldap2pg.yml
