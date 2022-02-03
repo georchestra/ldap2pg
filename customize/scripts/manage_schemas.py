@@ -80,51 +80,54 @@ def main():
         # close the connection
         conn.unbind()
 
-    with psycopg2.connect(pg_dsn,
-                          password=pg_password) as pg_conn:
-        cur = pg_conn.cursor()
+    pg_schemas = list()
+    pg_conn = psycopg2.connect(pg_dsn, password=pg_password)
+    with pg_conn:
+        with pg_conn.cursor() as cur:
+            # Get the list of existing non-system schemas
+            q = """SELECT DISTINCT nspname
+                    FROM pg_catalog.pg_namespace
+                    WHERE nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'
+                    AND nspname NOT LIKE 'tiger%' AND nspname <> 'topology' AND nspname <> 'public';"""
+            cur.execute(q)
+            pg_schemas = [r[0] for r in cur.fetchall()]
+            log.debug("Schemas list (from PG): {}".format(', '.join(pg_schemas)))
 
-        # Get the list of existing non-system schemas
-        q = """SELECT DISTINCT nspname
-                FROM pg_catalog.pg_namespace
-                WHERE nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'
-                AND nspname NOT LIKE 'tiger%' AND nspname <> 'topology' AND nspname <> 'public';"""
-        cur.execute(q)
-        pg_schemas = [r[0] for r in cur.fetchall()]
-        log.debug("Schemas list (from PG): {}".format(', '.join(pg_schemas)))
+            # Add missing schemas
+            missing_schemas = set(ldap_schemas) - set(pg_schemas)
 
-        # Add missing schemas
-        missing_schemas = set(ldap_schemas) - set(pg_schemas)
-        if missing_schemas:
-            log.info("Create schemas: {}".format(', '.join(missing_schemas)))
-            if not dry_mode:
-                for sch in missing_schemas:
-                    try:
-                        q = 'CREATE SCHEMA IF NOT EXISTS "{}";'.format(sch)
-                        cur.execute(q)
-                    except psycopg2.Error as e:
-                        log.error("Unexpected error: {}".format(e))
-                        cur.execute("ROLLBACK")
+            if missing_schemas:
+                log.info("Create schemas: {}".format(', '.join(missing_schemas)))
+                if not dry_mode:
+                    for sch in missing_schemas:
+                        try:
+                            q = 'CREATE SCHEMA IF NOT EXISTS "{}";'.format(sch)
+                            cur.execute(q)
+                        except psycopg2.Error as e:
+                            log.error("Unexpected error: {}".format(e))
+                            #cur.execute("ROLLBACK")
 
+    # Remove deprecated schemas (if empty)
+    deprecated_schemas = set(pg_schemas) - set(ldap_schemas)
+    if deprecated_schemas:
+        log.info("Delete schemas (if empty): {}".format(', '.join(deprecated_schemas)))
+        if not dry_mode:
+            for sch in deprecated_schemas:
+                with pg_conn:
+                    with pg_conn.cursor() as cur:
+                        try:
+                            q = 'DROP SCHEMA IF EXISTS "{}" RESTRICT;'.format(sch)
+                            cur.execute(q)
+                        except psycopg2.Error as e:
+                            if "cannot drop schema" in str(e):
+                                log.warning("Could not drop the schema {} (probably not empty)".format(sch));
+                            else:
+                                log.error("Unexpected error: {}".format(e));
+                            #cur.execute("ROLLBACK")
 
-        # Remove deprecated schemas (if empty)
-        deprecated_schemas = set(pg_schemas) - set(ldap_schemas)
-        if deprecated_schemas:
-            log.info("Delete schemas (if empty): {}".format(', '.join(deprecated_schemas)))
-            if not dry_mode:
-                for sch in deprecated_schemas:
-                    try:
-                        q = 'DROP SCHEMA IF EXISTS "{}" RESTRICT;'.format(sch)
-                        cur.execute(q)
-                    except psycopg2.Error as e:
-                        if "cannot drop schema" in str(e):
-                            log.warning("Could not drop the schema {} (probably not empty)".format(sch));
-                        else:
-                            log.error("Unexpected error: {}".format(e));
-
-                        cur.execute("ROLLBACK")
 
     log.info("schemas up-to-date")
+    pg_conn.close()
 
 if __name__ == '__main__':
     main()
