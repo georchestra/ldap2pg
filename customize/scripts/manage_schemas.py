@@ -20,12 +20,18 @@ handler.setFormatter(logging.Formatter(fmt='[%(asctime)s: %(levelname)s] %(messa
 log.addHandler(handler)
 
 # Load some config from ENV vars
-ldap_uri = environ.get('LDAPURI', 'ldap://192.168.1.70:3389')
+ldap_uri = environ.get('LDAPURI', 'ldap://ldap-host:389')
 baseDN=environ.get('LDAPBASEDN','dc=georchestra,dc=org')
 ldap_role_regex = environ.get('LDAP_ROLE_REGEX','^PGSQL_SCHEMA_([A-Z][A-Z0-9-_]+)_(READER|WRITER|PUBLISHER)$')
 search_base = 'ou=users,{}'.format(baseDN)
 ldapadmin_passwd = fileenv('LDAPPASSWORD', fallback='ldapadmin_pwd')
-pg_dsn = environ.get('PGDSN', 'postgres://georchestra@192.168.1.70:5434/georchestra')
+pg_dsn = environ.get('PGDSN')
+if not pg_dsn:
+    pg_host = environ.get('PGHOST', 'geodata')
+    pg_port = environ.get('PGPORT', '5432')
+    pg_database = environ.get('PGDATABASE', 'georchestra')
+    pg_user = environ.get('PGUSER', 'georchestra')
+    pg_dsn = f"host={pg_host} port={pg_port} dbname={pg_database} user={pg_user}"
 pg_password = fileenv('PGPASSWORD', fallback='geor')
 dry_mode = environ.get('DRY', '')
 

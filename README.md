@@ -98,7 +98,13 @@ We added a small script that handles schemas' creation & deletion when needed. Y
 Configuration is mostly done using environment variables:
 
 **Compulsory**:
-- PGDSN: the connection string to the postgresql DB. Look at the example above for a valid syntax
+- Postgresql connection params. One of the following
+  - PGDSN: the connection string to the postgresql DB. Look at the example above for a valid syntax
+  - Or [libpq](https://www.postgresql.org/docs/current/libpq-envars.html) environment variables
+    - PGHOST
+    - PGPORT
+    - PGDATABASE
+    - PGUSER
 - PGPASSWORD: password for the user documented in the DSN string. You can use PGPASSWORD_FILE to provide it through a docker secret
 - LDAPURI: the connection string to the LDAP DB. Look at the example above for a valid syntax
 - LDAPBASEDN: the LDAP base DN. Look at the example above for a valid syntax
